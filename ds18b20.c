@@ -74,18 +74,18 @@ void ICACHE_FLASH_ATTR ds18b20_read_temperature(ds18b20_t *sensor)
 float ICACHE_FLASH_ATTR ds18b20_get_temperature_c(ds18b20_t *sensor)
 {
 	// This function assumes 12-bit resolution temperature values.
-	int16_t lsb = (int16_t)sensor->scratchpad[0]; // 8 bits from the least significant byte
-	int16_t msb = (int16_t)(sensor->scratchpad[1] & 0xF); // 4 bits from the most significant byte
-	int16_t raw = lsb | (msb << 8);
+	uint16_t value = (uint16_t)sensor->scratchpad[0] + ((uint16_t)sensor->scratchpad[1] << 8);
 
-	float temp = raw * 0.0625f;
+	float sign = 1.0f;
 
-	// The most significant bit(s) of MSB contains the sign.
-	if (sensor->scratchpad[1] & (1 << 7)) {
-		temp *= -1;
+	// The most significant bit of the temperature contains the sign.
+	if (value > 2047) {
+		value = (~value) + 1;
+		sign = -1.0f;
 	}
 
-	return temp;
+	float temperature = sign * value * 0.0625f;
+	return temperature;
 }
 
 static bool ICACHE_FLASH_ATTR ds18b20_reset(ds18b20_t *sensor)
